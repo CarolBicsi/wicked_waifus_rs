@@ -1,4 +1,4 @@
-use wicked_waifus_protocol::{ItemExchangeInfo, ItemExchangeInfoRequest, ItemExchangeInfoResponse, NormalItemRequest, NormalItemResponse, PhantomItemRequest, PhantomItemResponse, WeaponItemRequest, WeaponItemResponse};
+use wicked_waifus_protocol::{ItemExchangeInfo, ItemExchangeInfoRequest, ItemExchangeInfoResponse, NormalItemRequest, NormalItemResponse, PhantomItemRequest, PhantomItemResponse, WeaponItemRequest, WeaponItemResponse, WeaponItem};
 
 use crate::logic::player::Player;
 
@@ -12,21 +12,66 @@ pub fn on_normal_item_request(
 }
 
 pub fn on_weapon_item_request(
-    _player: &mut Player,
+    player: &mut Player,
     _: WeaponItemRequest,
-    _response: &mut WeaponItemResponse,
+    response: &mut WeaponItemResponse,
 ) {
-    // TODO: Implement this
-    tracing::warn!("Unhandled WeaponItemRequest");
+    tracing::debug!("Received WeaponItemRequest, returning player weapons");
+    
+    // Collect all weapons from roles
+    let mut weapons: Vec<WeaponItem> = Vec::new();
+    let mut incr_id = 1;
+    
+    // Debug log the role weapons
+    for role in player.role_list.values() {
+        tracing::debug!(
+            "Role ID: {}, has weapon ID: {}", 
+            role.role_id, 
+            role.equip_weapon
+        );
+    }
+
+    // Create weapon items
+    for role in player.role_list.values() {
+        // Only add if weapon ID is valid (typically >= 20000000 and < 30000000)
+        if (20000000..30000000).contains(&role.equip_weapon) {
+            // Create basic weapon item
+            let weapon_item = WeaponItem {
+                id: role.equip_weapon,
+                incr_id,
+                func_value: 0,
+                weapon_level: 90,  // Max level for now
+                weapon_exp: 0,
+                weapon_breach: 6,  // Max breakthrough for now
+                weapon_reson_level: 6,  // Max resonance for now
+                role_id: role.role_id,  // Associate weapon with role
+                ..Default::default()
+            };
+            
+            tracing::debug!(
+                "Adding weapon to response - ID: {}, incr_id: {}, role_id: {}", 
+                weapon_item.id,
+                weapon_item.incr_id,
+                weapon_item.role_id
+            );
+            
+            weapons.push(weapon_item);
+            incr_id += 1;
+        }
+    }
+    
+    tracing::debug!("Returning {} weapons in response", weapons.len());
+    response.weapon_item_list = weapons;
 }
 
 pub fn on_phantom_item_request(
     _player: &mut Player,
     _: PhantomItemRequest,
-    _response: &mut PhantomItemResponse,
+    response: &mut PhantomItemResponse,
 ) {
-    // TODO: Implement this
-    tracing::warn!("Unhandled PhantomItemRequest");
+    // Set an empty response rather than leaving it unhandled
+    tracing::debug!("Received PhantomItemRequest, returning empty response");
+    response.phantom_item_list = Vec::new();
 }
 
 pub fn on_item_exchange_info_request(

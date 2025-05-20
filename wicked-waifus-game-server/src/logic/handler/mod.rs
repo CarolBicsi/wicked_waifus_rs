@@ -7,18 +7,18 @@ pub use dummy::*;
 pub use entity::*;
 pub use friend::*;
 pub use gacha::*;
-pub use inventory::*;
 pub use guide::*;
+pub use inventory::*;
 pub use lord_gym::*;
 pub use mail::*;
 pub use map::*;
 pub use misc::*;
 pub use role::*;
 pub use scene::*;
-use wicked_waifus_protocol::message::Message;
 pub use skill::*;
 pub use teleport::*;
 pub use tutorial::*;
+use wicked_waifus_protocol::message::Message;
 
 mod advice;
 mod animal;
@@ -187,6 +187,7 @@ handle_request! {
     LanguageSettingUpdate;
     ServerPlayStationPlayOnlyState;
     LoadingConfig;
+    TimeCheck;
 
     // Player (TODO: Review this on_..., port some from go)
     // ModifySignature;
@@ -282,6 +283,7 @@ handle_push! {
 
     // Misc
     VersionInfo;
+    TimeStop;
 }
 
 pub fn handle_logic_message(player: &mut super::player::Player, msg: Message) {

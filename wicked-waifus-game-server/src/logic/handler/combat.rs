@@ -13,9 +13,10 @@ use wicked_waifus_protocol::{
 use wicked_waifus_data::damage_data;
 
 use crate::logic::ecs::component::ComponentContainer;
-use crate::logic::player::Player;
+use crate::logic::player::{Element, Player};
 use crate::logic::utils::world_util;
 use crate::query_components;
+use rand::Rng;
 
 #[inline(always)]
 fn create_combat_response(
@@ -149,17 +150,49 @@ fn handle_damage_execute_request(
             };
         }
     }
-    receive_pack.data.push(create_combat_response(
-        combat_request,
-        combat_response_data::Message::DamageExecuteResponse(DamageExecuteResponse {
-            error_code: ErrorCode::Success.into(),
-            attacker_entity_id: request.attacker_entity_id,
-            target_entity_id: request.target_entity_id,
-            part_index: request.part_index,
-            damage,
-            ..Default::default()
-        }),
-    ));
+// สุ่มดาเมจพื้นฐาน (เช่น 3,000 - 8,000)
+let base_damage = rand::rng().random_range(1..=9999999);
+let mut damage = base_damage;
+
+// คริเรท 80% => สุ่มค่า true ได้ 80%
+let crit_rate = 0.8;
+let crit_multiplier = 2.56;
+let is_crit = rand::rng().random_bool(crit_rate);
+
+if is_crit {
+    damage = (damage as f32 * crit_multiplier).min(i32::MAX as f32) as i32;
+}
+
+// ดึง element type ถ้าใช้
+let element = damage_data::iter()
+    .find(|d| d.id == request.damage_id)
+    .map(|d| d.element_power_type)
+    .unwrap_or(0);
+
+// Log ข้อมูล
+tracing::info!(
+    "Executing damage: {}, Target: {}, Crit?: {}, Element: {}",
+    damage,
+    request.target_entity_id,
+    is_crit,
+    element
+);
+
+// Push combat response
+receive_pack.data.push(create_combat_response(
+    combat_request,
+    combat_response_data::Message::DamageExecuteResponse(DamageExecuteResponse {
+        error_code: ErrorCode::Success.into(),
+        attacker_entity_id: request.attacker_entity_id,
+        target_entity_id: request.target_entity_id,
+        part_index: request.part_index,
+        damage,
+        e_k: element,
+        is_crit,
+        ..Default::default()
+    }),
+));
+
     if let Some((value, _)) = query_components!(world, request.target_entity_id, Attribute)
         .0
         .unwrap()
@@ -184,13 +217,15 @@ fn handle_damage_execute_request(
                 }],
             }),
         ));
-        if updated_value == 0 {
-            world_util::remove_entity(
-                player,
-                request.target_entity_id,
-                ERemoveEntityType::HpIsZero,
-            );
-        }
+        // dont enable this if you dont want to get bugged
+
+        // if updated_value == 0 {
+        //     world_util::remove_entity(
+        //         player,
+        //         request.target_entity_id,
+        //         ERemoveEntityType::HpIsZero,
+        //     );
+        // }
     }
 
     response.error_code = ErrorCode::Success.into();
@@ -210,7 +245,6 @@ fn handle_battle(
         combat_request.combat_common.unwrap(),
         combat_notify_data::Message::PlayerBattleStateChangeNotify(PlayerBattleStateChangeNotify {
             player_id: player.basic_info.id,
-
             in_battle: condition,
         }),
     ));
