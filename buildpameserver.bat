@@ -1,1 +1,0 @@
-cargo run --bin wicked-waifus-game-server
