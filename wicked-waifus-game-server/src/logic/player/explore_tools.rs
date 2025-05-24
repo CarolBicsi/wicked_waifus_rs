@@ -59,7 +59,7 @@ impl ExploreTools {
     fn default_roulette() -> Roulette {
         let mut roulette = [0i32; 8];
         explore_tools_data::iter()
-            .take(8)
+            .take(3)
             .enumerate()
             .for_each(|(i, e)| roulette[i] = e.phantom_skill_id);
 
@@ -74,7 +74,7 @@ impl Default for ExploreTools {
                 .filter(|e| e.authorization.is_empty())
                 .map(|e| e.phantom_skill_id)
                 .collect(),
-            active_explore_skill: 1013,
+            active_explore_skill: 1001,
             roulette: Self::default_roulette(),
         }
     }

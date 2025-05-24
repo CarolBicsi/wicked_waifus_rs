@@ -7,18 +7,19 @@ pub use dummy::*;
 pub use entity::*;
 pub use friend::*;
 pub use gacha::*;
-pub use guide::*;
 pub use inventory::*;
+pub use guide::*;
 pub use lord_gym::*;
 pub use mail::*;
 pub use map::*;
 pub use misc::*;
 pub use role::*;
 pub use scene::*;
+use wicked_waifus_protocol::message::Message;
 pub use skill::*;
 pub use teleport::*;
 pub use tutorial::*;
-use wicked_waifus_protocol::message::Message;
+pub use weapon::*;
 
 mod advice;
 mod animal;
@@ -40,6 +41,7 @@ mod scene;
 mod skill;
 mod teleport;
 mod tutorial;
+mod weapon;
 
 macro_rules! handle_request {
     ($($name:ident $(, $inner_package:ident)?;)*) => {
@@ -187,7 +189,6 @@ handle_request! {
     LanguageSettingUpdate;
     ServerPlayStationPlayOnlyState;
     LoadingConfig;
-    TimeCheck;
 
     // Player (TODO: Review this on_..., port some from go)
     // ModifySignature;
@@ -201,13 +202,19 @@ handle_request! {
     RoleFavorList;
     FormationAttr;
     UpdateFormation;
+    UnlockRoleSkinList;
+    RoleSkinChange;
+    FlySkinWear;
+    FlySkinWearAllRole;
+    RoleLevelUpView;
+    PbUpLevelRole;
+    RoleBreakThroughView;
 
     // Scene (TODO: Review this on_..., port some from go)
     SceneTrace;
     SceneLoadingFinish;
     UpdateSceneDate;
     AccessPathTimeServerConfig;
-    UnlockRoleSkinList;
     PlayerHeadData;
 
     // Shop (TODO: Review this on_..., port some from go)
@@ -238,6 +245,12 @@ handle_request! {
     TutorialReceive;
     TutorialUnlock;
 
+    // Weapon
+    WeaponSkin;
+    EquipWeaponSkin;
+    SendEquipSkin;
+    EquipTakeOn;
+
     // TODO: Implement all this properly, workaround for game enter
     EntityPatrolStop;
     InitRange;
@@ -265,7 +278,6 @@ handle_request! {
     Liveness;
     WebSign;
     PhotoMemory;
-    WeaponSkin;
     VisionEquipGroupInfo;
     UpdatePlayStationBlockAccount;
     AdventureManual;
@@ -283,7 +295,6 @@ handle_push! {
 
     // Misc
     VersionInfo;
-    TimeStop;
 }
 
 pub fn handle_logic_message(player: &mut super::player::Player, msg: Message) {

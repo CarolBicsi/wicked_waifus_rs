@@ -38,7 +38,7 @@ impl RoleFormation {
 impl Default for RoleFormation {
     fn default() -> Self {
         Self {
-            id: 114514,
+            id: 1,
             cur_role: DEFAULT_FORMATION[0],
             role_ids: DEFAULT_FORMATION.to_vec(),
             is_current: true,

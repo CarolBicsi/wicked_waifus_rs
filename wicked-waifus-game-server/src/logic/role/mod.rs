@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use wicked_waifus_protocol::{ArrayIntInt, RoleInfo};
+use wicked_waifus_protocol::{ArrayIntInt, FormationRoleInfo, RoleInfo};
 
 use crate::config;
 use crate::logic::utils::growth_utils::get_role_props_by_level;
@@ -50,6 +50,9 @@ pub struct Role {
     pub element_energy: i32,
     pub favor_level: i32,
     pub favor_exp: i32,
+    pub wing_skin_id: i32,
+    pub fly_skin_id: i32,
+    pub weapon_skin_id: i32,
 }
 
 impl Role {
@@ -119,83 +122,51 @@ impl Role {
 
         let default_unlocks = &config::get_config().default_unlocks;
         let (level, breakthrough) = if default_unlocks.unlock_all_roles_max_level {
-            (data.max_level, 6)
+            (
+                data.max_level,
+                wicked_waifus_data::role_breach_data::iter()
+                    .filter(|level_data| level_data.breach_group_id == data.breach_id)
+                    .map(|level_data| level_data.breach_level)
+                    .max()
+                    .unwrap_or(0),
+            )
         } else {
-            (1, 0)
+            (
+                1,
+                wicked_waifus_data::role_breach_data::iter()
+                    .filter(|level_data| level_data.breach_group_id == data.breach_id)
+                    .map(|level_data| level_data.breach_level)
+                    .min()
+                    .unwrap_or(0),
+            )
         };
         let resonant_chain_group_index = if default_unlocks.unlock_all_roles_all_sequences {
-            6
+            wicked_waifus_data::resonant_chain_data::iter()
+                .filter(|level_data| level_data.group_id == data.resonant_chain_group_id)
+                .map(|level_data| level_data.group_index)
+                .max()
+                .unwrap_or(0)
         } else {
-            0
+            wicked_waifus_data::resonant_chain_data::iter()
+                .filter(|level_data| level_data.group_id == data.resonant_chain_group_id)
+                .map(|level_data| level_data.group_index)
+                .min()
+                .unwrap_or(0)
         };
+        // TODO: add weapon and echo stats
         let base_stats = &get_role_props_by_level(role_id, level, breakthrough);
-
-        // weapon
-        let equip_weapon = match role_id { // this is not show on character equiped menu
-            1402 => 21020046, // Yangyang 
-            1202 => 21030015, // Chixia 
-            1503 => 21050015, // Verina 
-            1501 => 21020046, // Rover: Spectro 
-            1102 => 21020046, // Sanhua 
-            1601 => 21010036, // Taoqi 
-            1502 => 21020046, // Rover: Spectro 
-            1103 => 21050015, // Baizhi 
-            1203 => 21050015, // Encore 
-            1602 => 21020046, // Danjin 
-            1403 => 21030015, // Aalto 
-            1404 => 21010016, // Jiyan 
-            1204 => 21030015, // Mortefi 
-            1603 => 21020026, // Camellya 
-            1301 => 21010036, // Calcharo 
-            1302 => 21050016, // Yinlin 
-            1104 => 21040015, // Lingyang 
-            1303 => 21040015, // Yuanwu 
-            1604 => 21020046, // Rover: Havoc 
-            1605 => 21020046, // Rover: Havoc 
-            1504 => 21010036, // Lumi 
-            1505 => 21050036, // Shorekeeper 
-            1405 => 21040015, // Jianxin 
-            1304 => 80080007, // Jinhsi 
-            1105 => 21050026, // Zhezhi 
-            1205 => 21020016, // Changli 
-            1305 => 21040016, // Xiangli Yao 
-            1106 => 21040015, // Youhu 
-            1606 => 21040026, // Roccia 
-            1107 => 21030016, // Carlotta 
-            1408 => 21020046, // Rover: Aero 
-            1406 => 21020046, // Rover: Aero 
-            1206 => 21020036, // Brant 
-            1506 => 21050046, // Phoebe 
-            1607 => 21050056, // Cantarella 
-            1507 => 21040036, // Zani 
-            1407 => 21030026, // Ciaccona 
-            1207 => 21010036, // Lupa 
-            1409 => 21020056, // Cartethyia 
-          _ => data.init_weapon_item_id,
-        };
-
-        // skin
-        let skin_id = match role_id {
-          1205 => 81011205, // changli skin
-          1107 => 81011107, // carotta skin
-          1304 => 81011304, // Jinhsi skin
-          1102 => 81011102, // Sanhua skin
-          _ => data.skin_id,
-        };
-
-
         Self {
             role_id,
             name: String::with_capacity(0),
             level,
-            exp: 0, // TODO: Compute based on level??
+            exp: 0,
             breakthrough,
             skill_map: HashMap::new(), // TODO!
             star: 0,
             favor: 0,
             create_time: time_util::unix_timestamp() as u32,
-            equip_weapon: equip_weapon,
-            skin_id: skin_id,
+            equip_weapon: data.init_weapon_item_id,
+            skin_id: data.skin_id,
             resonant_chain_group_index,
             hp: base_stats.life,
             energy: base_stats.energy,
@@ -206,25 +177,29 @@ impl Role {
             element_energy: base_stats.element_energy,
             favor_level: 0,
             favor_exp: 0,
+            wing_skin_id: 0,
+            fly_skin_id: 0,
+            weapon_skin_id: 0,
         }
     }
 
     pub fn get_base_properties(&self) -> BasePropertyData {
         // Overwrite dynamic attributes with stores values
         let mut base_stats = get_role_props_by_level(self.role_id, self.level, self.breakthrough);
+        // TODO: add weapon and echo stats
         // TODO: Integrity check, value has to be between 0 and max
-        base_stats.life = base_stats.life_max;
-        base_stats.energy = base_stats.energy_max;
-        base_stats.special_energy_1 = base_stats.special_energy_1_max;
-        base_stats.special_energy_2 = base_stats.special_energy_2_max;
-        base_stats.special_energy_3 = base_stats.special_energy_3_max;
-        base_stats.special_energy_4 = base_stats.special_energy_4_max;
-        base_stats.element_energy = base_stats.element_energy_max;
+        base_stats.life = self.hp;
+        base_stats.energy = self.energy;
+        base_stats.special_energy_1 = self.special_energy_1;
+        base_stats.special_energy_2 = self.special_energy_2;
+        base_stats.special_energy_3 = self.special_energy_3;
+        base_stats.special_energy_4 = self.special_energy_4;
+        base_stats.element_energy = self.element_energy;
         base_stats
-    
     }
 
     pub fn to_protobuf(&self) -> RoleInfo {
+        // TODO: add weapon and echo stats
         let base_prop: HashMap<i32, i32> = load_key_value(&self.get_base_properties());
         RoleInfo {
             role_id: self.role_id,
@@ -245,6 +220,17 @@ impl Role {
             skin_id: self.skin_id,
             resonant_chain_group_index: self.resonant_chain_group_index,
             ..Default::default()
+        }
+    }
+
+    pub fn to_formation_protobuf(&self) -> FormationRoleInfo {
+        let base_stats = get_role_props_by_level(self.role_id, self.level, self.breakthrough);
+        FormationRoleInfo {
+            role_id: self.role_id,
+            max_hp: base_stats.life_max,
+            cur_hp: base_stats.life,
+            level: self.level,
+            role_skin_id: self.skin_id,
         }
     }
 
@@ -273,6 +259,9 @@ impl Role {
                 element_energy: data.stats.unwrap().element_energy,
                 favor_level: data.favor_level,
                 favor_exp: data.favor_exp,
+                wing_skin_id: data.wing_skin_id,
+                fly_skin_id: data.fly_skin_id,
+                weapon_skin_id: data.weapon_skin_id,
             },
         )
     }
@@ -306,6 +295,9 @@ impl Role {
             }),
             favor_level: self.favor_level,
             favor_exp: self.favor_exp,
+            wing_skin_id: self.wing_skin_id,
+            fly_skin_id: self.fly_skin_id,
+            weapon_skin_id: self.weapon_skin_id,
             ..Default::default()
         }
     }
