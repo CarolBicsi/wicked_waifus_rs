@@ -237,17 +237,20 @@ impl Role {
     }
 
     pub fn get_base_properties(&self) -> BasePropertyData {
-        // Overwrite dynamic attributes with stores values
+        // 获取角色当前等级和突破的基础属性，这其中包含了最大值
         let mut base_stats = get_role_props_by_level(self.role_id, self.level, self.breakthrough);
+
         // TODO: add weapon and echo stats
-        // TODO: Integrity check, value has to be between 0 and max
-        base_stats.life = self.hp;
-        base_stats.energy = self.energy;
-        base_stats.special_energy_1 = self.special_energy_1;
-        base_stats.special_energy_2 = self.special_energy_2;
-        base_stats.special_energy_3 = self.special_energy_3;
-        base_stats.special_energy_4 = self.special_energy_4;
-        base_stats.element_energy = self.element_energy;
+        // 将动态属性设置为其最大值
+        // TODO: Integrity check, value has to be between 0 and max (这个注释可能需要审视，因为我们现在总是设置为最大值)
+        base_stats.life = base_stats.life_max;
+        base_stats.energy = base_stats.energy_max;
+        base_stats.special_energy_1 = base_stats.special_energy_1_max;
+        base_stats.special_energy_2 = base_stats.special_energy_2_max;
+        base_stats.special_energy_3 = base_stats.special_energy_3_max;
+        base_stats.special_energy_4 = base_stats.special_energy_4_max;
+        base_stats.element_energy = base_stats.element_energy_max;
+
         base_stats
     }
 
