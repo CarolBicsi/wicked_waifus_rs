@@ -1,4 +1,4 @@
-use wicked_waifus_protocol::{ErrorCode, InputSettingRequest, InputSettingResponse, InputSettingUpdateRequest, InputSettingUpdateResponse, LanguageSettingUpdateRequest, LanguageSettingUpdateResponse, MonthCardRequest, MonthCardResponse, ServerPlayStationPlayOnlyStateRequest, ServerPlayStationPlayOnlyStateResponse, UpdateVoxelEnvRequest, UpdateVoxelEnvResponse, VersionInfoPush, WebSignRequest, WebSignResponse, Zih};
+use wicked_waifus_protocol::{ErrorCode, InputSettingRequest, InputSettingResponse, InputSettingUpdateRequest, InputSettingUpdateResponse, LanguageSettingUpdateRequest, LanguageSettingUpdateResponse, MonthCardRequest, MonthCardResponse, ServerPlayStationPlayOnlyStateRequest, ServerPlayStationPlayOnlyStateResponse, UpdateVoxelEnvRequest, UpdateVoxelEnvResponse, VersionInfoPush, WebSignRequest, WebSignResponse, TimeStopPush, Zih};
 
 use crate::logic::player::Player;
 
@@ -70,4 +70,26 @@ pub fn on_update_voxel_env_request(
 ) {
     response.server_cave_mode = request.server_cave_mode;
     response.error_code = ErrorCode::Success.into();
+}
+
+pub fn on_time_check_request(
+    _: &Player,
+    request: wicked_waifus_protocol::TimeCheckRequest,
+    response: &mut wicked_waifus_protocol::TimeCheckResponse,
+) {
+    // Set response fields using the available properties
+    response.client_time = request.client_time;
+    response.server_time = wicked_waifus_commons::time_util::unix_timestamp() as i64;
+    response.server_stop_time = 0;  // Not used
+    response.scene_stop_time = 0;   // Not used
+    response.xo_2 = 0;              // Not used
+    response.error_code = wicked_waifus_protocol::ErrorCode::Success.into();
+}
+
+pub fn on_time_stop_push(_player: &Player, push: TimeStopPush) {
+    // Just log the push for now
+    tracing::debug!(
+        "Received TimeStopPush with time_dilation: {}",
+        push.time_dilation
+    );
 }
